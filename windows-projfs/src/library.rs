@@ -1,22 +1,11 @@
 use std::ffi::c_void;
 
 use windows::{
-    core::{
-        GUID,
-        PCWSTR,
-    },
-    Win32::{
-        Foundation::BOOLEAN,
-        Storage::ProjectedFileSystem::{
-            PRJ_CALLBACKS,
-            PRJ_DIR_ENTRY_BUFFER_HANDLE,
-            PRJ_EXTENDED_INFO,
-            PRJ_FILE_BASIC_INFO,
-            PRJ_NAMESPACE_VIRTUALIZATION_CONTEXT,
-            PRJ_PLACEHOLDER_INFO,
-            PRJ_PLACEHOLDER_VERSION_INFO,
-            PRJ_STARTVIRTUALIZING_OPTIONS,
-        },
+    core::{GUID, PCWSTR},
+    Win32::Storage::ProjectedFileSystem::{
+        PRJ_CALLBACKS, PRJ_DIR_ENTRY_BUFFER_HANDLE, PRJ_EXTENDED_INFO, PRJ_FILE_BASIC_INFO,
+        PRJ_NAMESPACE_VIRTUALIZATION_CONTEXT, PRJ_PLACEHOLDER_INFO, PRJ_PLACEHOLDER_VERSION_INFO,
+        PRJ_STARTVIRTUALIZING_OPTIONS,
     },
 };
 
@@ -30,7 +19,7 @@ pub trait ProjectedFSLibrary {
     unsafe fn prj_free_aligned_buffer(&self, buffer: *const c_void);
     unsafe fn prj_file_name_compare(&self, filename1: PCWSTR, filename2: PCWSTR) -> i32;
 
-    unsafe fn prj_file_name_match(&self, filenametocheck: PCWSTR, pattern: PCWSTR) -> BOOLEAN;
+    unsafe fn prj_file_name_match(&self, filenametocheck: PCWSTR, pattern: PCWSTR) -> bool;
 
     unsafe fn prj_mark_directory_as_placeholder(
         &self,
@@ -90,28 +79,14 @@ pub trait ProjectedFSLibrary {
 
 #[cfg(not(feature = "dynamic-import"))]
 mod lib_impl {
-    use std::{
-        ffi::c_void,
-        sync::Arc,
-    };
+    use std::{ffi::c_void, sync::Arc};
 
     use windows::{
-        core::{
-            GUID,
-            PCWSTR,
-        },
-        Win32::{
-            Foundation::BOOLEAN,
-            Storage::ProjectedFileSystem::{
-                PRJ_CALLBACKS,
-                PRJ_DIR_ENTRY_BUFFER_HANDLE,
-                PRJ_EXTENDED_INFO,
-                PRJ_FILE_BASIC_INFO,
-                PRJ_NAMESPACE_VIRTUALIZATION_CONTEXT,
-                PRJ_PLACEHOLDER_INFO,
-                PRJ_PLACEHOLDER_VERSION_INFO,
-                PRJ_STARTVIRTUALIZING_OPTIONS,
-            },
+        core::{GUID, PCWSTR},
+        Win32::Storage::ProjectedFileSystem::{
+            PRJ_CALLBACKS, PRJ_DIR_ENTRY_BUFFER_HANDLE, PRJ_EXTENDED_INFO, PRJ_FILE_BASIC_INFO,
+            PRJ_NAMESPACE_VIRTUALIZATION_CONTEXT, PRJ_PLACEHOLDER_INFO,
+            PRJ_PLACEHOLDER_VERSION_INFO, PRJ_STARTVIRTUALIZING_OPTIONS,
         },
     };
 
@@ -139,7 +114,7 @@ mod lib_impl {
             PrjFileNameCompare(filename1, filename2)
         }
 
-        unsafe fn prj_file_name_match(&self, filenametocheck: PCWSTR, pattern: PCWSTR) -> BOOLEAN {
+        unsafe fn prj_file_name_match(&self, filenametocheck: PCWSTR, pattern: PCWSTR) -> bool {
             use windows::Win32::Storage::ProjectedFileSystem::PrjFileNameMatch;
             PrjFileNameMatch(filenametocheck, pattern)
         }
@@ -250,38 +225,19 @@ mod lib_impl {
 
 #[cfg(feature = "dynamic-import")]
 mod lib_impl {
-    use std::{
-        ffi::c_void,
-        ptr,
-        sync::Arc,
-    };
+    use std::{ffi::c_void, ptr, sync::Arc};
 
     use windows::{
-        core::{
-            GUID,
-            HRESULT,
-            PCWSTR,
-        },
-        Win32::{
-            Foundation::BOOLEAN,
-            Storage::ProjectedFileSystem::{
-                PRJ_CALLBACKS,
-                PRJ_DIR_ENTRY_BUFFER_HANDLE,
-                PRJ_EXTENDED_INFO,
-                PRJ_FILE_BASIC_INFO,
-                PRJ_NAMESPACE_VIRTUALIZATION_CONTEXT,
-                PRJ_PLACEHOLDER_INFO,
-                PRJ_PLACEHOLDER_VERSION_INFO,
-                PRJ_STARTVIRTUALIZING_OPTIONS,
-            },
+        core::{GUID, HRESULT, PCWSTR},
+        Win32::Storage::ProjectedFileSystem::{
+            PRJ_CALLBACKS, PRJ_DIR_ENTRY_BUFFER_HANDLE, PRJ_EXTENDED_INFO, PRJ_FILE_BASIC_INFO,
+            PRJ_NAMESPACE_VIRTUALIZATION_CONTEXT, PRJ_PLACEHOLDER_INFO,
+            PRJ_PLACEHOLDER_VERSION_INFO, PRJ_STARTVIRTUALIZING_OPTIONS,
         },
     };
 
     use super::ProjectedFSLibrary;
-    use crate::{
-        Error,
-        Result,
-    };
+    use crate::{Error, Result};
 
     macro_rules! define_helper {
         (
@@ -321,7 +277,7 @@ mod lib_impl {
             fn PrjFreeAlignedBuffer(buffer : *const c_void) -> (),
 
             fn PrjFileNameCompare(filename1: PCWSTR, filename2: PCWSTR) -> i32,
-            fn PrjFileNameMatch(filenametocheck: PCWSTR, pattern: PCWSTR) -> BOOLEAN,
+            fn PrjFileNameMatch(filenametocheck: PCWSTR, pattern: PCWSTR) -> bool,
 
             fn PrjMarkDirectoryAsPlaceholder(rootpathname: PCWSTR, targetpathname: PCWSTR, versioninfo: *const PRJ_PLACEHOLDER_VERSION_INFO, virtualizationinstanceid : *const GUID) -> HRESULT,
             fn PrjStartVirtualizing(virtualizationrootpath: PCWSTR, callbacks: *const PRJ_CALLBACKS, instancecontext: *const ::core::ffi::c_void, options : *const PRJ_STARTVIRTUALIZING_OPTIONS, namespacevirtualizationcontext : *mut PRJ_NAMESPACE_VIRTUALIZATION_CONTEXT) -> HRESULT,
@@ -351,7 +307,7 @@ mod lib_impl {
             (self.PrjFileNameCompare)(filename1, filename2)
         }
 
-        unsafe fn prj_file_name_match(&self, filenametocheck: PCWSTR, pattern: PCWSTR) -> BOOLEAN {
+        unsafe fn prj_file_name_match(&self, filenametocheck: PCWSTR, pattern: PCWSTR) -> bool {
             (self.PrjFileNameMatch)(filenametocheck, pattern)
         }
 
@@ -386,7 +342,7 @@ mod lib_impl {
                 options.unwrap_or(ptr::null()),
                 &mut result,
             )
-            .from_abi(result)
+            .map(|| result)
         }
 
         unsafe fn prj_stop_virtualizing(

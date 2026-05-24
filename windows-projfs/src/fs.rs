@@ -1,55 +1,30 @@
 use std::{
     self,
     cell::RefCell,
-    collections::{
-        btree_map::Entry,
-        BTreeMap,
-    },
+    collections::{btree_map::Entry, BTreeMap},
     ffi::c_void,
-    path::{
-        Path,
-        PathBuf,
-    },
+    path::{Path, PathBuf},
     rc::Rc,
     sync::Arc,
 };
 
 use parking_lot::Mutex;
 use windows::{
-    core::{
-        GUID,
-        PCWSTR,
-    },
+    core::{GUID, PCWSTR},
     Win32::Storage::ProjectedFileSystem::{
-        PRJ_CALLBACKS,
-        PRJ_NAMESPACE_VIRTUALIZATION_CONTEXT,
-        PRJ_NOTIFICATION_MAPPING,
-        PRJ_NOTIFY_FILE_HANDLE_CLOSED_FILE_DELETED,
-        PRJ_NOTIFY_FILE_HANDLE_CLOSED_FILE_MODIFIED,
-        PRJ_NOTIFY_FILE_HANDLE_CLOSED_NO_MODIFICATION,
-        PRJ_NOTIFY_FILE_OPENED,
-        PRJ_NOTIFY_FILE_OVERWRITTEN,
-        PRJ_NOTIFY_FILE_PRE_CONVERT_TO_FULL,
-        PRJ_NOTIFY_FILE_RENAMED,
-        PRJ_NOTIFY_HARDLINK_CREATED,
-        PRJ_NOTIFY_NEW_FILE_CREATED,
-        PRJ_NOTIFY_PRE_DELETE,
-        PRJ_NOTIFY_PRE_RENAME,
-        PRJ_NOTIFY_PRE_SET_HARDLINK,
-        PRJ_NOTIFY_TYPES,
+        PRJ_CALLBACKS, PRJ_NAMESPACE_VIRTUALIZATION_CONTEXT, PRJ_NOTIFICATION_MAPPING,
+        PRJ_NOTIFY_FILE_HANDLE_CLOSED_FILE_DELETED, PRJ_NOTIFY_FILE_HANDLE_CLOSED_FILE_MODIFIED,
+        PRJ_NOTIFY_FILE_HANDLE_CLOSED_NO_MODIFICATION, PRJ_NOTIFY_FILE_OPENED,
+        PRJ_NOTIFY_FILE_OVERWRITTEN, PRJ_NOTIFY_FILE_PRE_CONVERT_TO_FULL, PRJ_NOTIFY_FILE_RENAMED,
+        PRJ_NOTIFY_HARDLINK_CREATED, PRJ_NOTIFY_NEW_FILE_CREATED, PRJ_NOTIFY_PRE_DELETE,
+        PRJ_NOTIFY_PRE_RENAME, PRJ_NOTIFY_PRE_SET_HARDLINK, PRJ_NOTIFY_TYPES,
         PRJ_STARTVIRTUALIZING_OPTIONS,
     },
 };
 
 use crate::{
-    library::{
-        load_library,
-        ProjectedFSLibrary,
-    },
-    DirectoryEntry,
-    Error,
-    ProjectedFileSystemSource,
-    Result,
+    library::{load_library, ProjectedFSLibrary},
+    DirectoryEntry, Error, ProjectedFileSystemSource, Result,
 };
 
 #[derive(Default)]
@@ -286,10 +261,7 @@ impl Drop for ProjectedFileSystem {
 
 mod native {
     use std::{
-        ffi::{
-            c_void,
-            OsString,
-        },
+        ffi::{c_void, OsString},
         mem,
         ops::ControlFlow,
         os::windows::ffi::OsStringExt,
@@ -297,58 +269,32 @@ mod native {
     };
 
     use windows::{
-        core::{
-            GUID,
-            HRESULT,
-            PCWSTR,
-        },
+        core::{GUID, HRESULT, PCWSTR},
         Win32::{
             Foundation::{
-                BOOLEAN,
-                ERROR_FILE_NOT_FOUND,
-                ERROR_INSUFFICIENT_BUFFER,
-                ERROR_OUTOFMEMORY,
-                STATUS_CANNOT_DELETE,
-                STATUS_SUCCESS,
+                ERROR_FILE_NOT_FOUND, ERROR_INSUFFICIENT_BUFFER, ERROR_OUTOFMEMORY,
+                STATUS_CANNOT_DELETE, STATUS_SUCCESS,
             },
             Storage::ProjectedFileSystem::{
-                PRJ_CALLBACK_DATA,
-                PRJ_CB_DATA_FLAG_ENUM_RESTART_SCAN,
-                PRJ_CB_DATA_FLAG_ENUM_RETURN_SINGLE_ENTRY,
-                PRJ_DIR_ENTRY_BUFFER_HANDLE,
-                PRJ_EXTENDED_INFO,
-                PRJ_FILE_BASIC_INFO,
-                PRJ_NOTIFICATION,
+                PRJ_CALLBACK_DATA, PRJ_CB_DATA_FLAG_ENUM_RESTART_SCAN,
+                PRJ_CB_DATA_FLAG_ENUM_RETURN_SINGLE_ENTRY, PRJ_DIR_ENTRY_BUFFER_HANDLE,
+                PRJ_EXTENDED_INFO, PRJ_FILE_BASIC_INFO, PRJ_NOTIFICATION,
                 PRJ_NOTIFICATION_FILE_HANDLE_CLOSED_FILE_DELETED,
                 PRJ_NOTIFICATION_FILE_HANDLE_CLOSED_FILE_MODIFIED,
-                PRJ_NOTIFICATION_FILE_HANDLE_CLOSED_NO_MODIFICATION,
-                PRJ_NOTIFICATION_FILE_OPENED,
-                PRJ_NOTIFICATION_FILE_OVERWRITTEN,
-                PRJ_NOTIFICATION_FILE_PRE_CONVERT_TO_FULL,
-                PRJ_NOTIFICATION_FILE_RENAMED,
-                PRJ_NOTIFICATION_HARDLINK_CREATED,
-                PRJ_NOTIFICATION_NEW_FILE_CREATED,
-                PRJ_NOTIFICATION_PARAMETERS,
-                PRJ_NOTIFICATION_PRE_DELETE,
-                PRJ_NOTIFICATION_PRE_RENAME,
-                PRJ_NOTIFICATION_PRE_SET_HARDLINK,
-                PRJ_PLACEHOLDER_INFO,
+                PRJ_NOTIFICATION_FILE_HANDLE_CLOSED_NO_MODIFICATION, PRJ_NOTIFICATION_FILE_OPENED,
+                PRJ_NOTIFICATION_FILE_OVERWRITTEN, PRJ_NOTIFICATION_FILE_PRE_CONVERT_TO_FULL,
+                PRJ_NOTIFICATION_FILE_RENAMED, PRJ_NOTIFICATION_HARDLINK_CREATED,
+                PRJ_NOTIFICATION_NEW_FILE_CREATED, PRJ_NOTIFICATION_PARAMETERS,
+                PRJ_NOTIFICATION_PRE_DELETE, PRJ_NOTIFICATION_PRE_RENAME,
+                PRJ_NOTIFICATION_PRE_SET_HARDLINK, PRJ_PLACEHOLDER_INFO,
             },
         },
     };
 
-    use super::{
-        FileNameU16Cache,
-        RawProjectionContext,
-    };
+    use super::{FileNameU16Cache, RawProjectionContext};
     use crate::{
-        aligned_buffer::PrjAlignedBuffer,
-        utils::io_result_to_hresult,
-        DirectoryEntry,
-        FileCloseAction,
-        FileRenameInfo,
-        Notification,
-        ProjectedFile,
+        aligned_buffer::PrjAlignedBuffer, utils::io_result_to_hresult, DirectoryEntry,
+        FileCloseAction, FileRenameInfo, Notification, ProjectedFile,
     };
 
     impl DirectoryEntry {
@@ -357,7 +303,7 @@ mod native {
 
             match self {
                 Self::Directory(directory) => {
-                    basic_info.IsDirectory = BOOLEAN::from(true);
+                    basic_info.IsDirectory = true;
                     basic_info.FileAttributes = directory.directory_attributes;
 
                     basic_info.CreationTime = directory.creation_time as i64;
@@ -368,7 +314,7 @@ mod native {
                     basic_info.ChangeTime = directory.last_write_time as i64;
                 }
                 Self::File(file) => {
-                    basic_info.IsDirectory = BOOLEAN::from(false);
+                    basic_info.IsDirectory = false;
 
                     basic_info.FileSize = file.file_size as i64;
                     basic_info.FileAttributes = file.file_attributes;
@@ -479,7 +425,10 @@ mod native {
 
                 let file_match = if let Some(search_expression) = enumeration.search_expression.as_ref() {
                     unsafe {
-                        library.prj_file_name_match(PCWSTR(name.as_ptr()), PCWSTR(search_expression.as_ptr())).as_bool()
+                        library.prj_file_name_match(
+                            PCWSTR(name.as_ptr()),
+                            PCWSTR(search_expression.as_ptr()),
+                        )
                     }
                 } else {
                     true
@@ -636,7 +585,7 @@ mod native {
 
     pub unsafe extern "system" fn notification_callback(
         callback_data: *const PRJ_CALLBACK_DATA,
-        is_directory: BOOLEAN,
+        is_directory: bool,
         notification: PRJ_NOTIFICATION,
         destination_filename: PCWSTR,
         _operation_parameters: *mut PRJ_NOTIFICATION_PARAMETERS,
@@ -654,7 +603,7 @@ mod native {
         callback_data.execute(move |callback_data| {
             let target_file = ProjectedFile {
                 file_id: callback_data.file_id.to_u128(),
-                is_directory: is_directory.as_bool(),
+                is_directory,
                 path: callback_data.file_path.clone().unwrap_or_default(),
             };
 
