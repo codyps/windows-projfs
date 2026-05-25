@@ -10,7 +10,7 @@ use std::{
 
 use parking_lot::Mutex;
 use windows::{
-    core::{GUID, PCWSTR},
+    core::{GUID, HSTRING, PCWSTR},
     Win32::Storage::ProjectedFileSystem::{
         PRJ_CALLBACKS, PRJ_NAMESPACE_VIRTUALIZATION_CONTEXT, PRJ_NOTIFICATION_MAPPING,
         PRJ_NOTIFY_FILE_HANDLE_CLOSED_FILE_DELETED, PRJ_NOTIFY_FILE_HANDLE_CLOSED_FILE_MODIFIED,
@@ -23,7 +23,7 @@ use windows::{
 };
 
 use crate::{
-    library::{load_library, ProjectedFSLibrary},
+    library::{self, load_library, ProjectedFSLibrary},
     DirectoryEntry, Error, ProjectedFileSystemSource, Result,
 };
 
@@ -58,7 +58,7 @@ struct DirectoryIteration {
 
 impl DirectoryIteration {
     pub fn from_unsorted(
-        library: &dyn ProjectedFSLibrary,
+        library: &impl ProjectedFSLibrary,
         id: u128,
         mut entries: Vec<DirectoryEntry>,
     ) -> Self {
@@ -108,7 +108,7 @@ impl DirectoryIteration {
 
 pub type RawProjectionContext = Mutex<ProjectionContext>;
 pub struct ProjectionContext {
-    library: Arc<dyn ProjectedFSLibrary>,
+    library: Arc<library::LibraryImpl>,
     source: Box<dyn ProjectedFileSystemSource>,
     directory_enumerations: BTreeMap<u128, DirectoryIteration>,
 }
@@ -135,7 +135,7 @@ impl ProjectionContext {
 }
 
 pub struct ProjectedFileSystem {
-    library: Arc<dyn ProjectedFSLibrary>,
+    library: Arc<library::LibraryImpl>,
     instance_id: GUID,
 
     raw_context: *mut RawProjectionContext,
@@ -146,17 +146,11 @@ static EMPTY_U16_STRING: &[u16] = &[0];
 impl ProjectedFileSystem {
     pub fn new(root: &Path, source: impl ProjectedFileSystemSource + 'static) -> Result<Self> {
         let instance_id = GUID::new()?;
-        let mut root_encoded = root.to_string_lossy().encode_utf16().collect::<Vec<_>>();
-        root_encoded.push(0);
+        let root = HSTRING::from(root);
 
         let library = load_library()?;
         unsafe {
-            library.prj_mark_directory_as_placeholder(
-                PCWSTR(root_encoded.as_ptr()),
-                PCWSTR::null(),
-                None,
-                &instance_id,
-            )
+            library.prj_mark_directory_as_placeholder(&root, PCWSTR::null(), None, &instance_id)
         }
         .map_err(Error::MarkProjectionRoot)?;
 
@@ -209,7 +203,7 @@ impl ProjectedFileSystem {
 
             let result = unsafe {
                 library.prj_start_virtualizing(
-                    PCWSTR(root_encoded.as_ptr()),
+                    &root,
                     &*callbacks,
                     Some(raw_context as *const c_void),
                     Some(&options),
@@ -293,8 +287,8 @@ mod native {
 
     use super::{FileNameU16Cache, RawProjectionContext};
     use crate::{
-        aligned_buffer::PrjAlignedBuffer, utils::io_result_to_hresult, DirectoryEntry,
-        FileCloseAction, FileRenameInfo, Notification, ProjectedFile,
+        aligned_buffer::PrjAlignedBuffer, library::ProjectedFSLibrary, utils::io_result_to_hresult,
+        DirectoryEntry, FileCloseAction, FileRenameInfo, Notification, ProjectedFile,
     };
 
     impl DirectoryEntry {
