@@ -135,7 +135,7 @@ mod lib_impl {
             P1: Param<PCWSTR>,
         {
             use windows::Win32::Storage::ProjectedFileSystem::PrjFileNameCompare;
-            PrjFileNameCompare(filename1.param().abi(), filename2.param().abi())
+            PrjFileNameCompare(filename1, filename2)
         }
 
         unsafe fn prj_file_name_match<P0, P1>(&self, filenametocheck: P0, pattern: P1) -> bool
@@ -144,7 +144,7 @@ mod lib_impl {
             P1: Param<PCWSTR>,
         {
             use windows::Win32::Storage::ProjectedFileSystem::PrjFileNameMatch;
-            PrjFileNameMatch(filenametocheck.param().abi(), pattern.param().abi())
+            PrjFileNameMatch(filenametocheck, pattern)
         }
 
         unsafe fn prj_mark_directory_as_placeholder<P0, P1>(
@@ -160,8 +160,8 @@ mod lib_impl {
         {
             use windows::Win32::Storage::ProjectedFileSystem::PrjMarkDirectoryAsPlaceholder;
             PrjMarkDirectoryAsPlaceholder(
-                rootpathname.param().abi(),
-                targetpathname.param().abi(),
+                rootpathname,
+                targetpathname,
                 versioninfo,
                 virtualizationinstanceid,
             )
@@ -178,12 +178,7 @@ mod lib_impl {
             P0: Param<PCWSTR>,
         {
             use windows::Win32::Storage::ProjectedFileSystem::PrjStartVirtualizing;
-            PrjStartVirtualizing(
-                virtualizationrootpath.param().abi(),
-                callbacks,
-                instancecontext,
-                options,
-            )
+            PrjStartVirtualizing(virtualizationrootpath, callbacks, instancecontext, options)
         }
 
         unsafe fn prj_stop_virtualizing(
@@ -205,12 +200,7 @@ mod lib_impl {
             P0: Param<PCWSTR>,
         {
             use windows::Win32::Storage::ProjectedFileSystem::PrjFillDirEntryBuffer2;
-            PrjFillDirEntryBuffer2(
-                direntrybufferhandle,
-                filename.param().abi(),
-                filebasicinfo,
-                extendedinfo,
-            )
+            PrjFillDirEntryBuffer2(direntrybufferhandle, filename, filebasicinfo, extendedinfo)
         }
 
         unsafe fn prj_write_file_data(
@@ -244,7 +234,7 @@ mod lib_impl {
             use windows::Win32::Storage::ProjectedFileSystem::PrjWritePlaceholderInfo;
             PrjWritePlaceholderInfo(
                 namespacevirtualizationcontext,
-                destinationfilename.param().abi(),
+                destinationfilename,
                 placeholderinfo,
                 placeholderinfosize,
             )
@@ -264,7 +254,7 @@ mod lib_impl {
             use windows::Win32::Storage::ProjectedFileSystem::PrjWritePlaceholderInfo2;
             PrjWritePlaceholderInfo2(
                 namespacevirtualizationcontext,
-                destinationfilename.param().abi(),
+                destinationfilename,
                 placeholderinfo,
                 placeholderinfosize,
                 extendedinfo,
@@ -283,13 +273,10 @@ mod lib_impl {
 
     use windows::{
         core::{Param, GUID, HRESULT, PCWSTR},
-        Win32::{
-            Foundation::BOOLEAN,
-            Storage::ProjectedFileSystem::{
-                PRJ_CALLBACKS, PRJ_DIR_ENTRY_BUFFER_HANDLE, PRJ_EXTENDED_INFO, PRJ_FILE_BASIC_INFO,
-                PRJ_NAMESPACE_VIRTUALIZATION_CONTEXT, PRJ_PLACEHOLDER_INFO,
-                PRJ_PLACEHOLDER_VERSION_INFO, PRJ_STARTVIRTUALIZING_OPTIONS,
-            },
+        Win32::Storage::ProjectedFileSystem::{
+            PRJ_CALLBACKS, PRJ_DIR_ENTRY_BUFFER_HANDLE, PRJ_EXTENDED_INFO, PRJ_FILE_BASIC_INFO,
+            PRJ_NAMESPACE_VIRTUALIZATION_CONTEXT, PRJ_PLACEHOLDER_INFO,
+            PRJ_PLACEHOLDER_VERSION_INFO, PRJ_STARTVIRTUALIZING_OPTIONS,
         },
     };
 
